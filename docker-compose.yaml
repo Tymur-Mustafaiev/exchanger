@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    image: tymurmustafaiev/eureka-server:latest
+    container_name: eureka-server
+    hostname: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - my-network
+
+  api-gateway:
+    image: tymurmustafaiev/api-gateway:latest
+    container_name: api-gateway
+    hostname: api-gateway
+    ports:
+      - "8765:8765"
+    networks:
+      - my-network
+    depends_on:
+      - eureka-server
+
+  crypto-pair-service:
+    image: tymurmustafaiev/crypto-pair-service:latest
+    container_name: crypto-pair-service
+    hostname: crypto-pair-service
+    ports:
+      - "8081:8081"
+    networks:
+      - my-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://crypto-pair-service:8081/actuator/health"]
+      interval: 1m
+      timeout: 20s
+      retries: 7
+      start_period: 60s
+
+  transaction-service:
+    image: tymurmustafaiev/transaction-service:latest
+    container_name: transaction-service
+    hostname: transaction-service
+    ports:
+      - "8082:8082"
+    networks:
+      - my-network
+    depends_on:
+      - api-gateway
+
+  wallet-service:
+    image: tymurmustafaiev/wallet-service:latest
+    container_name: wallet-service
+    hostname: wallet-service
+    ports:
+      - "8083:8083"
+    networks:
+      - my-network
+    depends_on:
+      - api-gateway
+
+  crypto-price-service:
+    image: tymurmustafaiev/crypto-price-service:latest
+    container_name: crypto-price-service
+    hostname: crypto-price-service
+    ports:
+      - "8084:8084"
+    networks:
+      - my-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://crypto-price-service:8084/actuator/health"]
+      interval: 1m
+      timeout: 20s
+      retries: 7
+      start_period: 60s
+
+  draw-chart-service:
+    image: tymurmustafaiev/draw-chart-service:latest
+    container_name: draw-chart-service
+    hostname: draw-chart-service
+    ports:
+      - "8085:8085"
+    networks:
+      - my-network
+    depends_on:
+      - crypto-price-service
+      - crypto-pair-service
+      - s3-storage-service
+
+  notification-service:
+    image: tymurmustafaiev/notification-service:latest
+    container_name: notification-service
+    hostname: notification-service
+    ports:
+      - "8086:8086"
+    networks:
+      - my-network
+    depends_on:
+      - api-gateway
+
+  s3-storage-service:
+    image: tymurmustafaiev/s3-storage-service:latest
+    container_name: s3-storage-service
+    hostname: s3-storage-service
+    ports:
+      - "8087:8087"
+    networks:
+      - my-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://s3-storage-service:8087/actuator/health"]
+      interval: 1m
+      timeout: 20s
+      retries: 7
+      start_period: 60s
+
+  crypto-pair-db:
+    image: postgres:latest
+    container_name: crypto-pair-db
+    hostname: crypto-pair-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: crypto_pair
+      POSTGRES_USER: crypto-pair-db-user
+      POSTGRES_PASSWORD: exchanger2024
+    networks:
+      - my-network
+
+  transaction-db:
+    image: postgres:latest
+    container_name: transaction-db
+    hostname: transaction-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: transaction
+      POSTGRES_USER: transaction-db-user
+      POSTGRES_PASSWORD: exchanger2024
+    networks:
+      - my-network
+
+  wallet-db:
+    image: postgres:latest
+    container_name: wallet-db
+    hostname: wallet-db
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: wallet
+      POSTGRES_USER: wallet-db-user
+      POSTGRES_PASSWORD: exchanger2024
+    networks:
+      - my-network
+
+  react-app:
+    image: tymurmustafaiev/react-app:latest
+    container_name: react-app
+    hostname: react-app
+    ports:
+      - "80:80"
+    networks:
+      - my-network
+    depends_on:
+      - api-gateway
+
+networks:
+  my-network:
+    driver: bridge
