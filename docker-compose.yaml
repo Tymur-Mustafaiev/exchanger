@@ -19,7 +19,8 @@ services:
       - my-network
     restart: unless-stopped
     command: sh -c "while true; do certbot renew --quiet; sleep 12h; done"
-
+    ports:
+      - "80:80"
   nginx:
     image: nginx:latest
     container_name: nginx
