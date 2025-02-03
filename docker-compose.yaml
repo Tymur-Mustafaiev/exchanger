@@ -8,11 +8,11 @@ services:
       - ./letsencrypt:/etc/letsencrypt
     entrypoint: >
       sh -c "
-        if ! curl -s --head http://nginx:80 | head -n 1 | grep 'HTTP/1.1 200 OK'; then 
-          certbot certonly --standalone --agree-tos --no-eff-email --email bittraideinfo@gmail.com -d bittraide.com
-          && touch /etc/letsencrypt/live/bittraide.com/cert_ready; 
-        else 
-          echo 'Nginx is running, skipping Certbot.'; 
+        if ! curl -s --head http://nginx:80 | head -n 1 | grep 'HTTP/1.1 200 OK'; then
+          certbot certonly --standalone --agree-tos --no-eff-email --email bittraideinfo@gmail.com -d bittraide.com;
+          touch /etc/letsencrypt/live/bittraide.com/cert_ready;
+        else
+          echo 'Nginx is running, skipping Certbot.';
         fi
       "
     networks:
