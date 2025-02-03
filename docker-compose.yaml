@@ -192,7 +192,7 @@ services:
     container_name: react-app
     hostname: react-app
     ports:
-      - "3000:80"
+      - "3000:3000"
     networks:
       - my-network
     depends_on:
