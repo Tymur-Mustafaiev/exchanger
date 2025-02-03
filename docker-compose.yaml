@@ -1,6 +1,25 @@
 version: '3.8'
 
 services:
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+    entrypoint: >
+      sh -c "
+        if ! curl -s --head http://nginx:80 | head -n 1 | grep 'HTTP/1.1 200 OK'; then 
+          certbot certonly --standalone --agree-tos --no-eff-email --email bittraideinfo@gmail.com -d bittraide.com
+          && touch /etc/letsencrypt/live/bittraide.com/cert_ready; 
+        else 
+          echo 'Nginx is running, skipping Certbot.'; 
+        fi
+      "
+    networks:
+      - my-network
+    restart: unless-stopped
+    command: sh -c "while true; do certbot renew --quiet; sleep 12h; done"
+
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -12,24 +31,14 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./letsencrypt:/etc/letsencrypt
       - ./html:/usr/share/nginx/html
-    depends_on:
-      - certbot
-      - react-app
-      - api-gateway
+    healthcheck:
+      test: ["CMD", "test", "-f", "/etc/letsencrypt/live/bittraide.com/fullchain.pem"]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 10s
     networks:
       - my-network
-
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - ./letsencrypt:/etc/letsencrypt
-      - ./html:/usr/share/nginx/html
-    entrypoint: >
-      sh -c "certbot certonly --webroot -w /usr/share/nginx/html 
-      --email bittraideinfo@gmail.com --agree-tos --no-eff-email 
-      --keep-until-expiring -d bittraide.com 
-      && while :; do certbot renew --webroot -w /usr/share/nginx/html --quiet; sleep 12h; done"
       
   eureka-server:
     image: tymurmustafaiev/eureka-server:latest
